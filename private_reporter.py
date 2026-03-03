@@ -10,17 +10,17 @@ import os
 
 init(autoreset=True)
 
-api_id = '28805072'          # ← apna daal
-api_hash = 'f73ffcf96637c268997b24a029d76cb3'  # ← apna daal
+api_id = 28805072
+api_hash = 'f73ffcf966c637c2689997b2a40a29d76cb3'
 
-parser = argparse.ArgumentParser(description="Private Channel Reporter - Final Fixed Version")
+parser = argparse.ArgumentParser(description="Private & Public Channel Reporter - Final Fixed")
 parser.add_argument('-an', '--add-number', help='Add new account (+91 number)', type=str)
 parser.add_argument('-r', '--run', type=int, default=30, help="Reports per account")
 parser.add_argument('-t', '--target', type=str, required=True, help="Channel ID (-100xxxxxxxxxx) or username")
 parser.add_argument('-m', '--mode', choices=['spam', 'violence', 'fake_account', 'hacking', 'illegal'], default='hacking')
 args = parser.parse_args()
 
-# ===================== ACCOUNT ADD =====================
+# ===================== ADD ACCOUNT =====================
 if args.add_number:
     session_name = f"account_{args.add_number.replace('+', '')}"
     client = TelegramClient(session_name, api_id, api_hash)
@@ -32,13 +32,13 @@ if args.add_number:
     client.disconnect()
     exit(0)
 
-# ===================== REPORTING MODE =====================
+# ===================== REPORTING =====================
 sessions = glob.glob("*.session")
 if not sessions:
-    print(f"{Fore.RED}No accounts found! Use -an first.{Fore.RESET}")
+    print(f"{Fore.RED}No accounts found! First add accounts using -an{Fore.RESET}")
     exit(1)
 
-print(f"{Fore.YELLOW}Found {len(sessions)} accounts → Total reports: {len(sessions) * args.run}{Fore.RESET}\n")
+print(f"{Fore.YELLOW}Loaded {len(sessions)} accounts → Total reports: {len(sessions)*args.run}{Fore.RESET}\n")
 
 reason_map = {
     'spam': b'spam',
@@ -55,7 +55,7 @@ async def report_from_session(session_file, target, mode, count):
         me = await client.get_me()
         username = me.username or me.first_name or "Unknown"
 
-        # Resolve target (private ID or username)
+        # Resolve target
         if str(target).startswith('-100'):
             peer = PeerChannel(int(str(target)[4:]))
             entity = await client.get_entity(peer)
@@ -68,7 +68,7 @@ async def report_from_session(session_file, target, mode, count):
         print(f"{Fore.CYAN}[{username}] Reporting: {entity.title or target}{Fore.RESET}")
 
         for i in range(count):
-            for attempt in range(3):  # retry on disconnect
+            for attempt in range(3):  # Retry on disconnect
                 try:
                     await client(functions.messages.ReportRequest(
                         peer=peer,
@@ -79,13 +79,13 @@ async def report_from_session(session_file, target, mode, count):
                     print(f"  [{Fore.GREEN}✅{Fore.RESET}] {username} | Report {i+1}")
                     break
                 except Exception as e:
-                    if "disconnected" in str(e).lower() or "connection" in str(e).lower():
+                    if "disconnected" in str(e).lower():
                         print(f"  [{Fore.YELLOW}Retry{Fore.RESET}] Disconnected, waiting 10s... ({attempt+1}/3)")
                         await asyncio.sleep(10)
                     else:
                         print(f"  [{Fore.RED}!{Fore.RESET}] {username} Error: {e}")
                         break
-            await asyncio.sleep(6)  # safe delay
+            await asyncio.sleep(6)  # Safe delay
 
     except Exception as e:
         print(f"{Fore.RED}{username} failed: {e}{Fore.RESET}")
